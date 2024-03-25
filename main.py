@@ -1,5 +1,5 @@
 # Imports
-from model_functions import avg_site_size_multiplier, count_activities_subscribed, total_activity_hrs, contract_varibale_mul
+from model_functions import avg_site_size_multiplier, count_activities_subscribed, total_activity_hrs, contract_varibale_mul, delivery_model_multiplier
 import pandas as pd
 from IPython.display import display
 
@@ -149,3 +149,15 @@ after_add_overlay = Adj_Activity_Hours * 1.2
 print("After 20% Overlay:->",after_add_overlay)
 
 # After DM Adjustment
+
+adj_time_CSACP_low = adj_time_CSACP
+adj_time_BP_low = adj_time_BP
+adj_time_TAP_low = (Activities['Monthly_JDE_period_close_and_Open_PO_review_monthly'] + Activities['Monthly_JDE_Balance_Sheet_Reconciliation_monthly'] + Activities['Corporate_Month_End_Revenue/Costs_Adjustments_monthly'] +Activities['Corporate_Pass_Through_Reconciliation_monthly'] + Activities['Corporate_Payment_Entries_Submission_monthly'] +Activities['Internal_&External_Audit_Sampling_Requests(SOC1_&_SOX)monthly'] +Activities['Corporate_P&L_Month_End_Review,Analysis&Queries_monthly'] +Activities['Corporate_Monthly_Forecast-_Preparation,Review&Approval_monthly']) * tech_auto_pma
+adj_time_CCA_low = (Activities['Client_Forecast-_Vendor_Spend_monthly']+Activities['Client_Finance_Audit_Supporting_monthly']) * Contrct_crl_auto
+
+s = adj_time_CSACP_low + adj_time_BP_low + adj_time_TAP_low + adj_time_CCA_low
+p = s / Adj_Activity_Hours
+print(p)
+
+adj_time_after_dm = delivery_model_multiplier(deliver_model,after_add_overlay,p)
+print("After DM Adjustment:->",adj_time_after_dm)

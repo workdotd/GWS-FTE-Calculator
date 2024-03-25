@@ -68,7 +68,7 @@ def contract_varibale_mul(contract_variable, key):
         return bank_account_use_mul[key]
 
 # Delivery Model 
-def delivery_model(dm, ah, p):
+def delivery_model_multiplier(dm, ah, p):
     if dm == "Shared Services":
         result = ah * 1
     elif dm == "On-site":
