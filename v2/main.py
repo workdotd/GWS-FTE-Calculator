@@ -47,7 +47,7 @@ cams, cemea, capac = 0,0,0
 
 activities = ['1.Billing', '2.Fund Reconciliations', '3.Payment',
                 '4.Monthly JDE period close and Open PO review',
-                '5.Monhtly JDE Balance Sheet Reconciliation',
+                '5.Monthly JDE Balance Sheet Reconciliation',
                 '6.Corporate Month End Revenue/Costs Adjustments',
                 '7.Corporate Pass Through Reconciliation',
                 '8.Corporate Payment Entries Submission',
@@ -80,7 +80,7 @@ contract_vars = {
 frequency_options = { 'Monthly': 1,'None': 0, 'Weekly': 4, 'Bi-Weekly': 2, 'Quarterly': 0.333333333333333, 'Yearly': 0.083}
 
 LCA = ['1.Billing','2.Fund Reconciliations','3.Payment','4.Monthly JDE period close and Open PO review',
-       '5.Monhtly JDE Balance Sheet Reconciliation','6.Corporate Month End Revenue/Costs Adjustments',
+       '5.Monthly JDE Balance Sheet Reconciliation','6.Corporate Month End Revenue/Costs Adjustments',
        '7.Corporate Pass Through Reconciliation','8.Corporate Payment Entries Submission','9.Internal & External Audit Sampling Requests (SOC1 & SOX)',
        '10.Corporate P&L Month End Review, Analysis & Queries','12.Corporate Monthly Forecast - Preparation, Review & Approval',
        '17.Client Forecast - Vendor Spend','19.Client Finance Audit Support']
@@ -249,7 +249,7 @@ def calculate_fte_requirement(df: pd.DataFrame):
 
     df['adj_time_CSACP'] = df['1.Billing_adj']*df['Contrct_Spend_Auto_CRL_PMA']
     df['adj_time_BP'] = df['2.Fund Reconciliations']*df['Bank_PMA'] + df['3.Payment']*df['Bank_PMA']
-    df['adj_time_TAP'] = (df['4.Monthly JDE period close and Open PO review'] + df['5.Monhtly JDE Balance Sheet Reconciliation'] + df['6.Corporate Month End Revenue/Costs Adjustments'] +df['7.Corporate Pass Through Reconciliation']+df['8.Corporate Payment Entries Submission']+df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'] + df['10.Corporate P&L Month End Review, Analysis & Queries'] +df['11.Corporate Yearly Budget - Preparation, Review & Approval']+df['12.Corporate Monthly Forecast - Preparation, Review & Approval']) * df['tech_auto_pma']
+    df['adj_time_TAP'] = (df['4.Monthly JDE period close and Open PO review'] + df['5.Monthly JDE Balance Sheet Reconciliation'] + df['6.Corporate Month End Revenue/Costs Adjustments'] +df['7.Corporate Pass Through Reconciliation']+df['8.Corporate Payment Entries Submission']+df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'] + df['10.Corporate P&L Month End Review, Analysis & Queries'] +df['11.Corporate Yearly Budget - Preparation, Review & Approval']+df['12.Corporate Monthly Forecast - Preparation, Review & Approval']) * df['tech_auto_pma']
     df['adj_time_CC'] = df['14.Client Month End Accruals - Open PO, Rental, Utilities etc. - Manual Journal Entries Posting'] * df['Contrct_crl']
     df['adj_time_CCA'] = (df['Customised Report']+ df['Standard Report'] + df['16.Client Budget - Management Fee & Payroll Calculation; Vendor Spend Data']+df['17.Client Forecast - Vendor Spend']+df['18.Client Savings Report']+df['19.Client Finance Audit Support']+df['20.Client Billing to Actuals Reconciliation']) * df['Contrct_crl_auto']
     df['adj_time_None'] = df['15.Monthly Operational Call for Client Month End Close (Queries from FM - Finance Related)']
@@ -260,7 +260,7 @@ def calculate_fte_requirement(df: pd.DataFrame):
 
     df['adj_time_CSACP_low'] = df['adj_time_CSACP']
     df['adj_time_BP_low'] = df['adj_time_BP']
-    df['adj_time_TAP_low'] = (df['4.Monthly JDE period close and Open PO review'] + df['5.Monhtly JDE Balance Sheet Reconciliation'] + df['6.Corporate Month End Revenue/Costs Adjustments'] +df['7.Corporate Pass Through Reconciliation']+df['8.Corporate Payment Entries Submission']+df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'] + df['10.Corporate P&L Month End Review, Analysis & Queries'] + df['12.Corporate Monthly Forecast - Preparation, Review & Approval']) * df['tech_auto_pma']
+    df['adj_time_TAP_low'] = (df['4.Monthly JDE period close and Open PO review'] + df['5.Monthly JDE Balance Sheet Reconciliation'] + df['6.Corporate Month End Revenue/Costs Adjustments'] +df['7.Corporate Pass Through Reconciliation']+df['8.Corporate Payment Entries Submission']+df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'] + df['10.Corporate P&L Month End Review, Analysis & Queries'] + df['12.Corporate Monthly Forecast - Preparation, Review & Approval']) * df['tech_auto_pma']
     df['adj_time_CCA_low'] = (df['17.Client Forecast - Vendor Spend'] + df['19.Client Finance Audit Support']) * df['Contrct_crl_auto']
     df['p'] = (df['adj_time_CSACP_low'] + df['adj_time_BP_low'] + df['adj_time_TAP_low'] + df['adj_time_CCA_low'])/df['Adj_Activity_Hours']
 
@@ -269,7 +269,7 @@ def calculate_fte_requirement(df: pd.DataFrame):
     df.loc[df['Delivery Model'] == "Mixed", 'adj_time_after_dm'] = df['after_add_overlay'] * df['p'] + (1 - df['p']) * df['after_add_overlay'] * 1.3
 
     df['Activities Subscribed'] = df.apply(lambda row:sum(row[col]>0 for col in activities if col in row.index),axis=1)
-    df['Total Activity Hours'] = df['1.Billing_adj'].astype(float)+df['2.Fund Reconciliations'].astype(float)+df['3.Payment'].astype(float)+df['4.Monthly JDE period close and Open PO review'].astype(float) + df['5.Monhtly JDE Balance Sheet Reconciliation'].astype(float) + df['6.Corporate Month End Revenue/Costs Adjustments'].astype(float) + df['7.Corporate Pass Through Reconciliation'].astype(float) + df['8.Corporate Payment Entries Submission'].astype(float) + df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'].astype(float) + df['10.Corporate P&L Month End Review, Analysis & Queries'].astype(float) + df['11.Corporate Yearly Budget - Preparation, Review & Approval'].astype(float) + df['12.Corporate Monthly Forecast - Preparation, Review & Approval'].astype(float) + df['13.Corporate Operation Merit & Bonus Review'].astype(float) + df['14.Client Month End Accruals - Open PO, Rental, Utilities etc. - Manual Journal Entries Posting'].astype(float) + df['15.Monthly Operational Call for Client Month End Close (Queries from FM - Finance Related)'].astype(float) + df['16.Client Budget - Management Fee & Payroll Calculation; Vendor Spend Data'].astype(float) + df['17.Client Forecast - Vendor Spend'].astype(float) + df['18.Client Savings Report'].astype(float) + df['19.Client Finance Audit Support'].astype(float) + df['20.Client Billing to Actuals Reconciliation'].astype(float) + df['Customised Report']+df['Standard Report']
+    df['Total Activity Hours'] = df['1.Billing_adj'].astype(float)+df['2.Fund Reconciliations'].astype(float)+df['3.Payment'].astype(float)+df['4.Monthly JDE period close and Open PO review'].astype(float) + df['5.Monthly JDE Balance Sheet Reconciliation'].astype(float) + df['6.Corporate Month End Revenue/Costs Adjustments'].astype(float) + df['7.Corporate Pass Through Reconciliation'].astype(float) + df['8.Corporate Payment Entries Submission'].astype(float) + df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'].astype(float) + df['10.Corporate P&L Month End Review, Analysis & Queries'].astype(float) + df['11.Corporate Yearly Budget - Preparation, Review & Approval'].astype(float) + df['12.Corporate Monthly Forecast - Preparation, Review & Approval'].astype(float) + df['13.Corporate Operation Merit & Bonus Review'].astype(float) + df['14.Client Month End Accruals - Open PO, Rental, Utilities etc. - Manual Journal Entries Posting'].astype(float) + df['15.Monthly Operational Call for Client Month End Close (Queries from FM - Finance Related)'].astype(float) + df['16.Client Budget - Management Fee & Payroll Calculation; Vendor Spend Data'].astype(float) + df['17.Client Forecast - Vendor Spend'].astype(float) + df['18.Client Savings Report'].astype(float) + df['19.Client Finance Audit Support'].astype(float) + df['20.Client Billing to Actuals Reconciliation'].astype(float) + df['Customised Report']+df['Standard Report']
 
     df['bin_billing'] = (pd.qcut(df['1.Billing_adj'], 10, labels=False, duplicates = 'drop') + 1) if df['1.Billing_adj'].sum() >1 else 1
     df['bin_funds'] = (pd.qcut(df['2.Fund Reconciliations'], 5, labels=False, duplicates = 'drop') + 1) if df['2.Fund Reconciliations'].sum() >1 else 1
@@ -433,8 +433,8 @@ def calculate_fte_requirement(df: pd.DataFrame):
                                 '3.Payment':'Payment_Value',
                                 '4.Monthly JDE period close and Open PO review_freq':'Period_close_and_Open_PO_review_Frequency',
                                 '4.Monthly JDE period close and Open PO review':'Period_close_and_Open_PO_review_Value',
-                                '5.Monhtly JDE Balance Sheet Reconciliation_freq':'Balance_Sheet_Reconciliation_Frequency',
-                                '5.Monhtly JDE Balance Sheet Reconciliation':'Balance_Sheet_Reconciliation_Value',
+                                '5.Monthly JDE Balance Sheet Reconciliation_freq':'Balance_Sheet_Reconciliation_Frequency',
+                                '5.Monthly JDE Balance Sheet Reconciliation':'Balance_Sheet_Reconciliation_Value',
                                 '6.Corporate Month End Revenue/Costs Adjustments_freq':'Revenue_Costs_Adjustments_Frequency',
                                 '6.Corporate Month End Revenue/Costs Adjustments':'Revenue_Costs_Adjustments_Value',
                                 '7.Corporate Pass Through Reconciliation_freq':'Pass_Through_Reconciliation_Frequency',
@@ -583,13 +583,13 @@ def activity_summary(df: pd.DataFrame):
     df['1.Billing_adj'] = np.where(df['Adjusted No of Sites/Country'] <= 1,df['1.Billing'] * 2 ,df['1.Billing']*df['Adjusted No of Sites/Country'])
  
     actable = pd.DataFrame({"Activities": ['Billing','Fund Reconciliations','Payment','Monthly JDE period close and Open PO review',
-                                                    'Monhtly JDE Balance Sheet Reconciliation','Corporate Month End Revenue/Costs Adjustments',
+                                                    'Monthly JDE Balance Sheet Reconciliation','Corporate Month End Revenue/Costs Adjustments',
                                                     'Corporate Pass Through Reconciliation','Corporate Payment Entries Submission','Internal & External Audit Sampling Requests (SOC1 & SOX)',
                                                     'Corporate P&L Month End Review, Analysis & Queries','Corporate Yearly Budget - Preparation, Review & Approval','Corporate Monthly Forecast - Preparation, Review & Approval',
                                                     'Corporate Operation Merit & Bonus Review','Client Month End Accruals - Open PO, Rental, Utilities etc. - Manual Journal Entries Posting','Monthly Operational Call for Client Month End Close (Queries from FM - Finance Related)',
                                                     'Client Budget - Management Fee & Payroll Calculation; Vendor Spend Data','Client Forecast - Vendor Spend','Client Savings Report','Client Finance Audit Support',
                                                     'Client Billing to Actuals Reconciliation','Standard Report','Customised Report'],
-                                "Hours":[df['1.Billing_adj'].sum().round(1),df['2.Fund Reconciliations'].sum().round(1),df['3.Payment'].sum().round(1),df['4.Monthly JDE period close and Open PO review'].sum().round(1),df['5.Monhtly JDE Balance Sheet Reconciliation'].sum().round(1),
+                                "Hours":[df['1.Billing_adj'].sum().round(1),df['2.Fund Reconciliations'].sum().round(1),df['3.Payment'].sum().round(1),df['4.Monthly JDE period close and Open PO review'].sum().round(1),df['5.Monthly JDE Balance Sheet Reconciliation'].sum().round(1),
                                             df['6.Corporate Month End Revenue/Costs Adjustments'].sum().round(1),df['7.Corporate Pass Through Reconciliation'].sum().round(1),df['8.Corporate Payment Entries Submission'].sum().round(1),df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'].sum().round(1),df['10.Corporate P&L Month End Review, Analysis & Queries'].sum().round(1),
                                             df['11.Corporate Yearly Budget - Preparation, Review & Approval'].sum().round(1),df['12.Corporate Monthly Forecast - Preparation, Review & Approval'].sum().round(1),df['13.Corporate Operation Merit & Bonus Review'].sum().round(1),df['14.Client Month End Accruals - Open PO, Rental, Utilities etc. - Manual Journal Entries Posting'].sum().round(1),df['15.Monthly Operational Call for Client Month End Close (Queries from FM - Finance Related)'].sum().round(1),
                                             df['16.Client Budget - Management Fee & Payroll Calculation; Vendor Spend Data'].sum().round(1),df['17.Client Forecast - Vendor Spend'].sum().round(1),df['18.Client Savings Report'].sum().round(1),df['19.Client Finance Audit Support'].sum().round(1),df['20.Client Billing to Actuals Reconciliation'].sum().round(1),
@@ -658,7 +658,7 @@ def download_summary(df: pd.DataFrame):
 
     df['adj_time_CSACP'] = df['1.Billing_adj']*df['Contrct_Spend_Auto_CRL_PMA']
     df['adj_time_BP'] = df['2.Fund Reconciliations']*df['Bank_PMA'] + df['3.Payment']*df['Bank_PMA']
-    df['adj_time_TAP'] = (df['4.Monthly JDE period close and Open PO review'] + df['5.Monhtly JDE Balance Sheet Reconciliation'] + df['6.Corporate Month End Revenue/Costs Adjustments'] +df['7.Corporate Pass Through Reconciliation']+df['8.Corporate Payment Entries Submission']+df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'] + df['10.Corporate P&L Month End Review, Analysis & Queries'] +df['11.Corporate Yearly Budget - Preparation, Review & Approval']+df['12.Corporate Monthly Forecast - Preparation, Review & Approval']) * df['tech_auto_pma']
+    df['adj_time_TAP'] = (df['4.Monthly JDE period close and Open PO review'] + df['5.Monthly JDE Balance Sheet Reconciliation'] + df['6.Corporate Month End Revenue/Costs Adjustments'] +df['7.Corporate Pass Through Reconciliation']+df['8.Corporate Payment Entries Submission']+df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'] + df['10.Corporate P&L Month End Review, Analysis & Queries'] +df['11.Corporate Yearly Budget - Preparation, Review & Approval']+df['12.Corporate Monthly Forecast - Preparation, Review & Approval']) * df['tech_auto_pma']
     df['adj_time_CC'] = df['14.Client Month End Accruals - Open PO, Rental, Utilities etc. - Manual Journal Entries Posting'] * df['Contrct_crl']
     df['adj_time_CCA'] = (df['Customised Report']+ df['Standard Report'] + df['16.Client Budget - Management Fee & Payroll Calculation; Vendor Spend Data']+df['17.Client Forecast - Vendor Spend']+df['18.Client Savings Report']+df['19.Client Finance Audit Support']+df['20.Client Billing to Actuals Reconciliation']) * df['Contrct_crl_auto']
     df['adj_time_None'] = df['15.Monthly Operational Call for Client Month End Close (Queries from FM - Finance Related)']
@@ -669,7 +669,7 @@ def download_summary(df: pd.DataFrame):
 
     df['adj_time_CSACP_low'] = df['adj_time_CSACP']
     df['adj_time_BP_low'] = df['adj_time_BP']
-    df['adj_time_TAP_low'] = (df['4.Monthly JDE period close and Open PO review'] + df['5.Monhtly JDE Balance Sheet Reconciliation'] + df['6.Corporate Month End Revenue/Costs Adjustments'] +df['7.Corporate Pass Through Reconciliation']+df['8.Corporate Payment Entries Submission']+df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'] + df['10.Corporate P&L Month End Review, Analysis & Queries'] + df['12.Corporate Monthly Forecast - Preparation, Review & Approval']) * df['tech_auto_pma']
+    df['adj_time_TAP_low'] = (df['4.Monthly JDE period close and Open PO review'] + df['5.Monthly JDE Balance Sheet Reconciliation'] + df['6.Corporate Month End Revenue/Costs Adjustments'] +df['7.Corporate Pass Through Reconciliation']+df['8.Corporate Payment Entries Submission']+df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'] + df['10.Corporate P&L Month End Review, Analysis & Queries'] + df['12.Corporate Monthly Forecast - Preparation, Review & Approval']) * df['tech_auto_pma']
     df['adj_time_CCA_low'] = (df['17.Client Forecast - Vendor Spend'] + df['19.Client Finance Audit Support']) * df['Contrct_crl_auto']
     df['p'] = (df['adj_time_CSACP_low'] + df['adj_time_BP_low'] + df['adj_time_TAP_low'] + df['adj_time_CCA_low'])/df['Adj_Activity_Hours']
     
@@ -678,7 +678,7 @@ def download_summary(df: pd.DataFrame):
     df.loc[df['Delivery Model'].eq("Mixed"), 'adj_time_after_dm'] = df['after_add_overlay'] * df['p'] + (1 - df['p']) * df['after_add_overlay'] * 1.3
 
     df['Activities Subscribed'] = df.apply(lambda row:sum(row[col]>0 for col in activities if col in row.index),axis=1)
-    df['Total Activity Hours'] = df['1.Billing_adj'].astype(float)+df['2.Fund Reconciliations'].astype(float)+df['3.Payment'].astype(float)+df['4.Monthly JDE period close and Open PO review'].astype(float) + df['5.Monhtly JDE Balance Sheet Reconciliation'].astype(float) + df['6.Corporate Month End Revenue/Costs Adjustments'].astype(float) + df['7.Corporate Pass Through Reconciliation'].astype(float) + df['8.Corporate Payment Entries Submission'].astype(float) + df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'].astype(float) + df['10.Corporate P&L Month End Review, Analysis & Queries'].astype(float) + df['11.Corporate Yearly Budget - Preparation, Review & Approval'].astype(float) + df['12.Corporate Monthly Forecast - Preparation, Review & Approval'].astype(float) + df['13.Corporate Operation Merit & Bonus Review'].astype(float) + df['14.Client Month End Accruals - Open PO, Rental, Utilities etc. - Manual Journal Entries Posting'].astype(float) + df['15.Monthly Operational Call for Client Month End Close (Queries from FM - Finance Related)'].astype(float) + df['16.Client Budget - Management Fee & Payroll Calculation; Vendor Spend Data'].astype(float) + df['17.Client Forecast - Vendor Spend'].astype(float) + df['18.Client Savings Report'].astype(float) + df['19.Client Finance Audit Support'].astype(float) + df['20.Client Billing to Actuals Reconciliation'].astype(float) + df['Customised Report']+df['Standard Report']
+    df['Total Activity Hours'] = df['1.Billing_adj'].astype(float)+df['2.Fund Reconciliations'].astype(float)+df['3.Payment'].astype(float)+df['4.Monthly JDE period close and Open PO review'].astype(float) + df['5.Monthly JDE Balance Sheet Reconciliation'].astype(float) + df['6.Corporate Month End Revenue/Costs Adjustments'].astype(float) + df['7.Corporate Pass Through Reconciliation'].astype(float) + df['8.Corporate Payment Entries Submission'].astype(float) + df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'].astype(float) + df['10.Corporate P&L Month End Review, Analysis & Queries'].astype(float) + df['11.Corporate Yearly Budget - Preparation, Review & Approval'].astype(float) + df['12.Corporate Monthly Forecast - Preparation, Review & Approval'].astype(float) + df['13.Corporate Operation Merit & Bonus Review'].astype(float) + df['14.Client Month End Accruals - Open PO, Rental, Utilities etc. - Manual Journal Entries Posting'].astype(float) + df['15.Monthly Operational Call for Client Month End Close (Queries from FM - Finance Related)'].astype(float) + df['16.Client Budget - Management Fee & Payroll Calculation; Vendor Spend Data'].astype(float) + df['17.Client Forecast - Vendor Spend'].astype(float) + df['18.Client Savings Report'].astype(float) + df['19.Client Finance Audit Support'].astype(float) + df['20.Client Billing to Actuals Reconciliation'].astype(float) + df['Customised Report']+df['Standard Report']
 
     df['bin_billing'] = (pd.qcut(df['1.Billing_adj'], 10, labels=False, duplicates = 'drop') + 1) if df['1.Billing_adj'].sum() >0 else 0
     # df['bin_funds'] = (pd.qcut(df['2.Fund Reconciliations'], 5, labels=False, duplicates = 'drop') + 1) if df['2.Fund Reconciliations']['2.Fund Reconciliations'].sum() >0 else 0
@@ -804,8 +804,8 @@ def download_summary(df: pd.DataFrame):
                                 '3.Payment':'Payment_Value',
                                 '4.Monthly JDE period close and Open PO review_freq':'Period_close_and_Open_PO_review_Frequency',
                                 '4.Monthly JDE period close and Open PO review':'Period_close_and_Open_PO_review_Value',
-                                '5.Monhtly JDE Balance Sheet Reconciliation_freq':'Balance_Sheet_Reconciliation_Frequency',
-                                '5.Monhtly JDE Balance Sheet Reconciliation':'Balance_Sheet_Reconciliation_Value',
+                                '5.Monthly JDE Balance Sheet Reconciliation_freq':'Balance_Sheet_Reconciliation_Frequency',
+                                '5.Monthly JDE Balance Sheet Reconciliation':'Balance_Sheet_Reconciliation_Value',
                                 '6.Corporate Month End Revenue/Costs Adjustments_freq':'Revenue_Costs_Adjustments_Frequency',
                                 '6.Corporate Month End Revenue/Costs Adjustments':'Revenue_Costs_Adjustments_Value',
                                 '7.Corporate Pass Through Reconciliation_freq':'Pass_Through_Reconciliation_Frequency',
@@ -889,13 +889,13 @@ def download_summary(df: pd.DataFrame):
 
     dfam = pd.DataFrame({"Rule Based":[chrs,tftec,"------------------------",FAE,SFAE,tle], "ML Predicted":[mlhrs,tfteml,"------------------------",FAML,SFAML,tlml]},index=["Total Hours", "Total FTE Count","Recommended Role", "Financial Analyst","Sr. Financial Analyst", "Manager/Team-Lead"])
     actable = pd.DataFrame({"Activities": ['Billing','Fund Reconciliations','Payment','Monthly JDE period close and Open PO review',
-                                                    'Monhtly JDE Balance Sheet Reconciliation','Corporate Month End Revenue/Costs Adjustments',
+                                                    'Monthly JDE Balance Sheet Reconciliation','Corporate Month End Revenue/Costs Adjustments',
                                                     'Corporate Pass Through Reconciliation','Corporate Payment Entries Submission','Internal & External Audit Sampling Requests (SOC1 & SOX)',
                                                     'Corporate P&L Month End Review, Analysis & Queries','Corporate Yearly Budget - Preparation, Review & Approval','Corporate Monthly Forecast - Preparation, Review & Approval',
                                                     'Corporate Operation Merit & Bonus Review','Client Month End Accruals - Open PO, Rental, Utilities etc. - Manual Journal Entries Posting','Monthly Operational Call for Client Month End Close (Queries from FM - Finance Related)',
                                                     'Client Budget - Management Fee & Payroll Calculation; Vendor Spend Data','Client Forecast - Vendor Spend','Client Savings Report','Client Finance Audit Support',
                                                     'Client Billing to Actuals Reconciliation','Standard Report','Customised Report'],
-                                "Hours":[df['1.Billing_adj'].sum().round(1),df['2.Fund Reconciliations'].sum().round(1),df['3.Payment'].sum().round(1),df['4.Monthly JDE period close and Open PO review'].sum().round(1),df['5.Monhtly JDE Balance Sheet Reconciliation'].sum().round(1),
+                                "Hours":[df['1.Billing_adj'].sum().round(1),df['2.Fund Reconciliations'].sum().round(1),df['3.Payment'].sum().round(1),df['4.Monthly JDE period close and Open PO review'].sum().round(1),df['5.Monthly JDE Balance Sheet Reconciliation'].sum().round(1),
                                             df['6.Corporate Month End Revenue/Costs Adjustments'].sum().round(1),df['7.Corporate Pass Through Reconciliation'].sum().round(1),df['8.Corporate Payment Entries Submission'].sum().round(1),df['9.Internal & External Audit Sampling Requests (SOC1 & SOX)'].sum().round(1),df['10.Corporate P&L Month End Review, Analysis & Queries'].sum().round(1),
                                             df['11.Corporate Yearly Budget - Preparation, Review & Approval'].sum().round(1),df['12.Corporate Monthly Forecast - Preparation, Review & Approval'].sum().round(1),df['13.Corporate Operation Merit & Bonus Review'].sum().round(1),df['14.Client Month End Accruals - Open PO, Rental, Utilities etc. - Manual Journal Entries Posting'].sum().round(1),df['15.Monthly Operational Call for Client Month End Close (Queries from FM - Finance Related)'].sum().round(1),
                                             df['16.Client Budget - Management Fee & Payroll Calculation; Vendor Spend Data'].sum().round(1),df['17.Client Forecast - Vendor Spend'].sum().round(1),df['18.Client Savings Report'].sum().round(1),df['19.Client Finance Audit Support'].sum().round(1),df['20.Client Billing to Actuals Reconciliation'].sum().round(1),
@@ -1012,4 +1012,3 @@ async def download_summary_ep(request:Request):
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
-
