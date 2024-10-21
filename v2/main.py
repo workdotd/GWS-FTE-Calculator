@@ -10,6 +10,7 @@ import uvicorn
 import logging
 import dbconn
 import os
+import requests
 
 
 app = FastAPI()
@@ -96,30 +97,29 @@ inputs = pd.read_excel("Inputs.xlsx", 'Sheet2')
 radf = pd.DataFrame(columns = ['RA Region', "Selected Role", "Contract Value", "Performance Risk", "Growth Opportunity", "GA Region_count", "Global Role Req", "Global Managed Spend","location"])
 def fmanagement(radf: pd.DataFrame):
 
-    if radf['RA Region'].eq("APAC").any():
-        if (radf["Contract Value"].eq(apcv1).any() and radf["Performance Risk"].eq(appr1).any() and radf["Growth Opportunity"].eq(apgo1).any()) or (radf["Contract Value"].eq(apcv1).any() and radf["Performance Risk"].eq(appr1).any() and radf["Growth Opportunity"].ne(apgo1).any()) or (radf["Contract Value"].eq(apcv1).any() and radf["Performance Risk"].ne(appr1).any() and radf["Growth Opportunity"].eq(apgo1).any()) or (radf["Contract Value"].ne(apcv1).any() and radf["Performance Risk"].eq(appr1).any() and radf["Growth Opportunity"].eq(apgo1).any()):
-            role = "Finance Director"
-        elif (radf["Contract Value"].eq(apcv2).any() and radf["Performance Risk"].eq(appr2).any() and radf["Growth Opportunity"].eq(apgo2).any()) or (radf["Contract Value"].eq(apcv2).any() and radf["Performance Risk"].eq(appr2).any() and radf["Growth Opportunity"].ne(apgo2).any()) or (radf["Contract Value"].eq(apcv2).any() and radf["Performance Risk"].ne(appr2).any() and radf["Growth Opportunity"].eq(apgo2).any()) or (radf["Contract Value"].ne(apcv2).any() and radf["Performance Risk"].eq(appr2).any() and radf["Growth Opportunity"].eq(apgo2).any()):
-            role = "Sr Finance Manager"
-        elif (radf["Contract Value"].eq(apcv3).any() and radf["Performance Risk"].eq(appr3).any() and radf["Growth Opportunity"].eq(apgo3).any()) or (radf["Contract Value"].eq(apcv3).any() and radf["Performance Risk"].eq(appr3).any() and radf["Growth Opportunity"].ne(apgo3).any()) or (radf["Contract Value"].eq(apcv3).any() and radf["Performance Risk"].ne(appr3).any() and radf["Growth Opportunity"].eq(apgo3).any()) or (radf["Contract Value"].ne(apcv3).any() and radf["Performance Risk"].eq(appr3).any() and radf["Growth Opportunity"].eq(apgo3).any()):
-            role = "Finance Manager"
-        elif (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].isin(apcv).any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].isin(appr).any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].isin(apgo).any()):
-            role = "None"
+    def determine_role(row):
+        if row['Selected Role'] != "None":
+            return row['Selected Role']
+        if row['Contract Value'] == "None" and row['Performance Risk'] == "None" and row['Growth Opportunity'] == "None":
+            return "None"
+        if (row['Contract Value'] == "None" and row['Performance Risk'] == "None") or (row['Contract Value'] == "None" and row['Growth Opportunity'] == "None") or (row['Performance Risk'] == "None" and row['Growth Opportunity'] == "None"):
+            return "None"
+        if row['RA Region'] == "APAC":
+            if (row["Contract Value"] == apcv2 and row["Performance Risk"] == appr2 and row["Growth Opportunity"] == apgo2) or (row["Contract Value"] == apcv2 and row["Performance Risk"] == appr2 and row["Growth Opportunity"] != apgo2) or (row["Contract Value"] == apcv2 and row["Performance Risk"] != appr2 and row["Growth Opportunity"] == apgo2) or (row["Contract Value"] != apcv2 and row["Performance Risk"] == appr2 and row["Growth Opportunity"] == apgo2):
+                return "Sr Finance Manager"
+            elif (row["Contract Value"] == apcv3 and row["Performance Risk"] == appr3 and row["Growth Opportunity"] == apgo3) or (row["Contract Value"] == apcv3 and row["Performance Risk"] == appr3 and row["Growth Opportunity"] != apgo3) or (row["Contract Value"] == apcv3 and row["Performance Risk"] != appr3 and row["Growth Opportunity"] == apgo3) or (row["Contract Value"] != apcv3 and row["Performance Risk"] == appr3 and row["Growth Opportunity"] == apgo3):
+                return "Finance Manager"
+            else:
+                return "Finance Director"
         else:
-            role = "Finance Director"
-    else:
-        if (radf["Contract Value"].eq(cv1).any() and radf["Performance Risk"].eq(pr1).any() and radf["Growth Opportunity"].eq(go1).any()) or (radf["Contract Value"].eq(cv1).any() and radf["Performance Risk"].eq(pr1).any() and radf["Growth Opportunity"].ne(go1).any()) or (radf["Contract Value"].eq(cv1).any() and radf["Performance Risk"].ne(pr1).any() and radf["Growth Opportunity"].eq(go1).any()) or (radf["Contract Value"].ne(cv1).any() and radf["Performance Risk"].eq(pr1).any() and radf["Growth Opportunity"].eq(go1).any()):
-            role = "Finance Director"
-        elif (radf["Contract Value"].eq(cv2).any() and radf["Performance Risk"].eq(pr2).any() and radf["Growth Opportunity"].eq(go2).any()) or (radf["Contract Value"].eq(cv2).any() and radf["Performance Risk"].eq(pr2).any() and radf["Growth Opportunity"].ne(go2).any()) or (radf["Contract Value"].eq(cv2).any() and radf["Performance Risk"].ne(pr2).any() and radf["Growth Opportunity"].eq(go2).any()) or (radf["Contract Value"].ne(cv2).any() and radf["Performance Risk"].eq(pr2).any() and radf["Growth Opportunity"].eq(go2).any()):
-            role = "Sr Finance Manager"
-        elif (radf["Contract Value"].eq(cv3).any() and radf["Performance Risk"].eq(pr3).any() and radf["Growth Opportunity"].eq(go3).any()) or (radf["Contract Value"].eq(cv3).any() and radf["Performance Risk"].eq(pr3).any() and radf["Growth Opportunity"].ne(go3).any()) or (radf["Contract Value"].eq(cv3).any() and radf["Performance Risk"].ne(pr3).any() and radf["Growth Opportunity"].eq(go3).any()) or (radf["Contract Value"].ne(cv3).any() and radf["Performance Risk"].eq(pr3).any() and radf["Growth Opportunity"].eq(go3).any()):
-            role = "Finance Manager"
-        elif (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].isin(cv).any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].isin(pr).any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].isin(go).any()):
-            role = "None"
-        else:
-            role = "Finance Director"
+            if (row["Contract Value"] == cv2 and row["Performance Risk"] == pr2 and row["Growth Opportunity"] == go2) or (row["Contract Value"] == cv2 and row["Performance Risk"] == pr2 and row["Growth Opportunity"] != go2) or (row["Contract Value"] == cv2 and row["Performance Risk"] != pr2 and row["Growth Opportunity"] == go2) or (row["Contract Value"] != cv2 and row["Performance Risk"] == pr2 and row["Growth Opportunity"] == go2):
+                return "Sr Finance Manager"
+            elif (row["Contract Value"] == cv3 and row["Performance Risk"] == pr3 and row["Growth Opportunity"] == go3) or (row["Contract Value"] == cv3 and row["Performance Risk"] == pr3 and row["Growth Opportunity"] != go3) or (row["Contract Value"] == cv3 and row["Performance Risk"] != pr3 and row["Growth Opportunity"] == go3) or (row["Contract Value"] != cv3 and row["Performance Risk"] == pr3 and row["Growth Opportunity"] == go3):
+                return "Finance Manager"
+            else:
+                return "Finance Director"
 
-    radf["RA Calc Role"] = radf["Selected Role"].where(radf["Selected Role"] != "None", role)
+    radf['RA Calc Role'] = radf.apply(determine_role, axis=1)
     fmdf = radf.reindex(columns = ['RA Region', 'Selected Role', 'Contract Value', 'Performance Risk',
         'Growth Opportunity','RA Calc Role','RA FTE Count','RA Location','GA Region_count', 'Global Role Req',
         'Global Managed Spend', 'location'])
@@ -135,6 +135,12 @@ def fmanagement(radf: pd.DataFrame):
     gflr = radf["Global Role Req"]
     managed_spend = radf["Global Managed Spend"]
 
+    ftec_ams = fmdf['RA FTE Count'][0]
+    ftec_emea = fmdf['RA FTE Count'][1]
+    ftec_apac = fmdf['RA FTE Count'][2]
+    ftec_global = 1
+    total_ftec = ftec_ams+ftec_emea+ftec_apac+ftec_global
+
     if gflr.eq("No").any():
         if count_r.gt(1).any() and managed_spend.eq("Above 50M Managed Spend").any():
             garr = "Global Finance Director"
@@ -148,74 +154,80 @@ def fmanagement(radf: pd.DataFrame):
     else:
         garr = "Global Finance Director"
 
-    fmsumm = pd.DataFrame({"Role": [garr,"-----",roleams,roleemea,roleapac], "FTE":[1,"-----",1,1,1],"location":[globalloc,"-----", "TBC", "TBC", "TBC"]},index=["Global Role","Regional Roles","AMERICAS","EMEA","APAC"])
+    fmsumm = pd.DataFrame({"Role": [garr,"-----",roleams,roleemea,roleapac,""],"location":[fmdf['location'][0],"-----", "TBC", "TBC", "TBC",""],"FTE":[1,"-----",ftec_ams,ftec_emea,ftec_apac,total_ftec]} ,index=["Global Role","Regional Roles","AMERICAS","EMEA","APAC","Total Finance Management"])
     
 
     return fmsumm
 
 def fmsumdnld(radf: pd.DataFrame):
 
-    if radf['RA Region'].eq("APAC").any():
-        if (radf["Contract Value"].eq(apcv1).any() and radf["Performance Risk"].eq(appr1).any() and radf["Growth Opportunity"].eq(apgo1).any()) or (radf["Contract Value"].eq(apcv1).any() and radf["Performance Risk"].eq(appr1).any() and radf["Growth Opportunity"].ne(apgo1).any()) or (radf["Contract Value"].eq(apcv1).any() and radf["Performance Risk"].ne(appr1).any() and radf["Growth Opportunity"].eq(apgo1).any()) or (radf["Contract Value"].ne(apcv1).any() and radf["Performance Risk"].eq(appr1).any() and radf["Growth Opportunity"].eq(apgo1).any()):
-            role = "Finance Director"
-        elif (radf["Contract Value"].eq(apcv2).any() and radf["Performance Risk"].eq(appr2).any() and radf["Growth Opportunity"].eq(apgo2).any()) or (radf["Contract Value"].eq(apcv2).any() and radf["Performance Risk"].eq(appr2).any() and radf["Growth Opportunity"].ne(apgo2).any()) or (radf["Contract Value"].eq(apcv2).any() and radf["Performance Risk"].ne(appr2).any() and radf["Growth Opportunity"].eq(apgo2).any()) or (radf["Contract Value"].ne(apcv2).any() and radf["Performance Risk"].eq(appr2).any() and radf["Growth Opportunity"].eq(apgo2).any()):
-            role = "Sr Finance Manager"
-        elif (radf["Contract Value"].eq(apcv3).any() and radf["Performance Risk"].eq(appr3).any() and radf["Growth Opportunity"].eq(apgo3).any()) or (radf["Contract Value"].eq(apcv3).any() and radf["Performance Risk"].eq(appr3).any() and radf["Growth Opportunity"].ne(apgo3).any()) or (radf["Contract Value"].eq(apcv3).any() and radf["Performance Risk"].ne(appr3).any() and radf["Growth Opportunity"].eq(apgo3).any()) or (radf["Contract Value"].ne(apcv3).any() and radf["Performance Risk"].eq(appr3).any() and radf["Growth Opportunity"].eq(apgo3).any()):
-            role = "Finance Manager"
-        elif (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].isin(apcv).any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].isin(appr).any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].isin(apgo).any()):
-            role = "None"
+    def determine_role(row):
+        if row['Selected Role'] != "None":
+            return row['Selected Role']
+        if row['Contract Value'] == "None" and row['Performance Risk'] == "None" and row['Growth Opportunity'] == "None":
+            return "None"
+        if (row['Contract Value'] == "None" and row['Performance Risk'] == "None") or (row['Contract Value'] == "None" and row['Growth Opportunity'] == "None") or (row['Performance Risk'] == "None" and row['Growth Opportunity'] == "None"):
+            return "None"
+        if row['RA Region'] == "APAC":
+            if (row["Contract Value"] == apcv2 and row["Performance Risk"] == appr2 and row["Growth Opportunity"] == apgo2) or (row["Contract Value"] == apcv2 and row["Performance Risk"] == appr2 and row["Growth Opportunity"] != apgo2) or (row["Contract Value"] == apcv2 and row["Performance Risk"] != appr2 and row["Growth Opportunity"] == apgo2) or (row["Contract Value"] != apcv2 and row["Performance Risk"] == appr2 and row["Growth Opportunity"] == apgo2):
+                return "Sr Finance Manager"
+            elif (row["Contract Value"] == apcv3 and row["Performance Risk"] == appr3 and row["Growth Opportunity"] == apgo3) or (row["Contract Value"] == apcv3 and row["Performance Risk"] == appr3 and row["Growth Opportunity"] != apgo3) or (row["Contract Value"] == apcv3 and row["Performance Risk"] != appr3 and row["Growth Opportunity"] == apgo3) or (row["Contract Value"] != apcv3 and row["Performance Risk"] == appr3 and row["Growth Opportunity"] == apgo3):
+                return "Finance Manager"
+            else:
+                return "Finance Director"
         else:
-            role = "Finance Director"
-    else:
-        if (radf["Contract Value"].eq(cv1).any() and radf["Performance Risk"].eq(pr1).any() and radf["Growth Opportunity"].eq(go1).any()) or (radf["Contract Value"].eq(cv1).any() and radf["Performance Risk"].eq(pr1).any() and radf["Growth Opportunity"].ne(go1).any()) or (radf["Contract Value"].eq(cv1).any() and radf["Performance Risk"].ne(pr1).any() and radf["Growth Opportunity"].eq(go1).any()) or (radf["Contract Value"].ne(cv1).any() and radf["Performance Risk"].eq(pr1).any() and radf["Growth Opportunity"].eq(go1).any()):
-            role = "Finance Director"
-        elif (radf["Contract Value"].eq(cv2).any() and radf["Performance Risk"].eq(pr2).any() and radf["Growth Opportunity"].eq(go2).any()) or (radf["Contract Value"].eq(cv2).any() and radf["Performance Risk"].eq(pr2).any() and radf["Growth Opportunity"].ne(go2).any()) or (radf["Contract Value"].eq(cv2).any() and radf["Performance Risk"].ne(pr2).any() and radf["Growth Opportunity"].eq(go2).any()) or (radf["Contract Value"].ne(cv2).any() and radf["Performance Risk"].eq(pr2).any() and radf["Growth Opportunity"].eq(go2).any()):
-            role = "Sr Finance Manager"
-        elif (radf["Contract Value"].eq(cv3).any() and radf["Performance Risk"].eq(pr3).any() and radf["Growth Opportunity"].eq(go3).any()) or (radf["Contract Value"].eq(cv3).any() and radf["Performance Risk"].eq(pr3).any() and radf["Growth Opportunity"].ne(go3).any()) or (radf["Contract Value"].eq(cv3).any() and radf["Performance Risk"].ne(pr3).any() and radf["Growth Opportunity"].eq(go3).any()) or (radf["Contract Value"].ne(cv3).any() and radf["Performance Risk"].eq(pr3).any() and radf["Growth Opportunity"].eq(go3).any()):
-            role = "Finance Manager"
-        elif (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].isin(cv).any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].isin(pr).any() and radf["Growth Opportunity"].eq("None").any()) or (radf["Contract Value"].eq("None").any() and radf["Performance Risk"].eq("None").any() and radf["Growth Opportunity"].isin(go).any()):
-            role = "None"
-        else:
-            role = "Finance Director"
+            if (row["Contract Value"] == cv2 and row["Performance Risk"] == pr2 and row["Growth Opportunity"] == go2) or (row["Contract Value"] == cv2 and row["Performance Risk"] == pr2 and row["Growth Opportunity"] != go2) or (row["Contract Value"] == cv2 and row["Performance Risk"] != pr2 and row["Growth Opportunity"] == go2) or (row["Contract Value"] != cv2 and row["Performance Risk"] == pr2 and row["Growth Opportunity"] == go2):
+                return "Sr Finance Manager"
+            elif (row["Contract Value"] == cv3 and row["Performance Risk"] == pr3 and row["Growth Opportunity"] == go3) or (row["Contract Value"] == cv3 and row["Performance Risk"] == pr3 and row["Growth Opportunity"] != go3) or (row["Contract Value"] == cv3 and row["Performance Risk"] != pr3 and row["Growth Opportunity"] == go3) or (row["Contract Value"] != cv3 and row["Performance Risk"] == pr3 and row["Growth Opportunity"] == go3):
+                return "Finance Manager"
+            else:
+                return "Finance Director"
 
-    radf["RA Calc Role"] = radf["Selected Role"].where(radf["Selected Role"] != "None", role)
+    radf['RA Calc Role'] = radf.apply(determine_role, axis=1)
     fmdf = radf.reindex(columns = ['RA Region', 'Selected Role', 'Contract Value', 'Performance Risk',
         'Growth Opportunity','RA Calc Role','RA FTE Count','RA Location','GA Region_count', 'Global Role Req',
-        'Global Managed Spend', 'Location'])
+        'Global Managed Spend', 'location'])
     fmdf['RA FTE Count'] = 1
     fmdf['RA Location'] = "TBC"
-
+   
     roleams = fmdf['RA Calc Role'][0]
     roleemea = fmdf['RA Calc Role'][1]
     roleapac = fmdf['RA Calc Role'][2]
-    globalloc = fmdf['Location'][0]
+    globalloc = fmdf['location'][0]
 
     count_r = radf["GA Region_count"]
     gflr = radf["Global Role Req"]
     managed_spend = radf["Global Managed Spend"]
 
-    ftec_ams = fmdf['RA FTE Count'][0]
-    ftec_emea = fmdf['RA FTE Count'][1]
-    ftec_apac = fmdf['RA FTE Count'][2]
-    ftec_global = 1
-    total_ftec = ftec_ams+ftec_emea+ftec_apac+ftec_global
+
 
     if gflr.eq("No").any():
         if count_r.gt(1).any() and managed_spend.eq("Above 50M Managed Spend").any():
             garr = "Global Finance Director"
             
-        elif count_r.eq(1).any():
+        elif count_r.le(1).any() and managed_spend.eq("Above 50M Managed Spend").any():
             garr = "No Role Recommended"
 
         else: 
             garr = "Finance Director"
 
     else:
-        garr = "Recommended Global Finance Management Role"
+        garr = "Global Finance Director"
 
-    fmsumm = pd.DataFrame({"Role": [garr,"-----",roleams,roleemea,roleapac], "location":[globalloc,"-----", "TBC", "TBC", "TBC"],"FTE":[1,"-----",ftec_ams,ftec_emea,ftec_apac,total_ftec]},index=["Global Role","Regional Roles","AMERICAS","EMEA","APAC","Total Finance Management"])
+    ftec_ams = fmdf['RA FTE Count'][0]
+    ftec_emea = fmdf['RA FTE Count'][1]
+    ftec_apac = fmdf['RA FTE Count'][2]
+    ftec_global = 0 if garr == "None" else 1
+    total_ftec = ftec_ams+ftec_emea+ftec_apac+ftec_global
 
-    fmsumm.to_csv("fte_fm_sum.csv")
+    fmsumm = pd.DataFrame({"Role": [garr,"-----",roleams,roleemea,roleapac,""],"location":[fmdf['location'][0],"-----", "TBC", "TBC", "TBC",""],"FTE":[ftec_global,"-----",ftec_ams,ftec_emea,ftec_apac,total_ftec]} ,index=["Global Role","Regional Roles","AMERICAS","EMEA","APAC","Total Finance Management"])
+    try:
+        fmsum_path = "fm_summary.csv"
+        fmsumm.to_csv(fmsum_path)
+        return fmsum_path
+    except Exception as e:
+        logging.error(f"Error generating CSV file: {e}")
+        return None
 
 #-------------------------------------------Finance Delivery Functions---------------------------------------------------------------------------------------------------
 def calculate_fte_requirement(df: pd.DataFrame):
@@ -929,10 +941,16 @@ def download_summary(df: pd.DataFrame):
                                             df['16.Client Budget - Management Fee & Payroll Calculation; Vendor Spend Data'].sum().round(1),df['17.Client Forecast - Vendor Spend'].sum().round(1),df['18.Client Savings Report'].sum().round(1),df['19.Client Finance Audit Support'].sum().round(1),df['20.Client Billing to Actuals Reconciliation'].sum().round(1),
                                             df['Standard Report'].sum().round(1),df['Customised Report'].sum().round(1)]},index = (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22))
     
-    with pd.ExcelWriter('Summary_File.xlsx', engine='openpyxl') as writer:
-                dfam.to_excel(writer, sheet_name='Summary')
-                actable.to_excel(writer, sheet_name='Activity Summary')
-                dft.to_excel(writer, sheet_name='Inputs')    
+    try:
+        fdsum_path = "Summary_File.xlsx"
+        with pd.ExcelWriter(fdsum_path, engine='openpyxl') as writer:
+                    dfam.to_excel(writer, sheet_name='Summary')
+                    actable.to_excel(writer, sheet_name='Activity Summary')
+                    dft.to_excel(writer, sheet_name='Inputs')
+        return fdsum_path
+    except Exception as e:
+        logging.error(f"Error generating CSV file: {e}")
+        return None
 #-------------------------------------------Enable CORS---------------------------------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
@@ -943,41 +961,45 @@ app.add_middleware(
 )
 
 #-----------------------------------------------Tocken for SSO-------------------------------------------------------------------------------
-CLIENT_ID = "xxxx"
-CLIENT_SECRET = "xxxx"
-REDIRECT_URI = "https://finance-ftecalculator-dev.cbre.com/oauth2/callback"
-TOKEN_URL = "xxxx"
+CLIENT_ID = "c2e0dc60-1bcd-45be-90e0-b48e26545a81"
+CLIENT_SECRET = "XxK8Q~ijTpvj1.0JKRIrep-V1zvE86Y6v2yq_bm8"
+REDIRECT_URI = "https://finance-ftecalculator-dev2.cbre.com/callback"
+TOKEN_URL = "https://login.microsoftonline.com/0159e9d0-09a0-4edf-96ba-a3deea363c28/v2.0"
 
-@app.get("/token")
+@app.get("/api/token")
 async def get_token(state: str, code: str):
     if not code or not state:
         raise HTTPException(status_code=400, detail="Missing code or state")
 
-    # Exchange the authorization code for an access token
-    token_response = requests.post(
-        TOKEN_URL,
-        data={
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": REDIRECT_URI,
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-        },
-    )
+    try:
+        # Exchange the authorization code for an access token
+        token_response = requests.post(
+            TOKEN_URL,
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": REDIRECT_URI,
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+            },
+        )
 
-    if token_response.status_code != 200:
-        raise HTTPException(status_code=token_response.status_code, detail="Token exchange failed")
+        if token_response.status_code != 200:
+            raise HTTPException(status_code=token_response.status_code, detail="Token exchange failed")
 
-    token_data = token_response.json()
-    access_token = token_data.get("access_token")
+        token_data = token_response.json()
+        access_token = token_data.get("access_token")
 
-    if not access_token:
-        raise HTTPException(status_code=400, detail="No access token found")
+        if not access_token:
+            raise HTTPException(status_code=400, detail="No access token found")
 
-    return {"access_token": access_token}
+        return {"access_token": access_token}
+    except Exception as e:
+        logging.error(f"Error exchanging token: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 #-------------------------------------------Finance Management endpoint---------------------------------------------------------------------------------------------------
-@app.post("/finance_management")
+@app.post("/api/finance_management")
 async def finance_management(request: Request):
     try:
         input_fm = await request.json()
@@ -994,18 +1016,46 @@ async def finance_management(request: Request):
         logging.error(f"Error processing input data: {err}")
         raise HTTPException(status_code=400, detail=f"bad data: {err}")
 
-@app.post("/finance_management/fm_summary_download")
+@app.post("/api/finance_management/fm_summary_download")
 async def fm_sum_dnld(request:Request):
     try:
+        logging.info("Received request for fm_summary_download")
+
+        # Read JSON payload from the request
         input_fmsum = await request.json()
+        logging.info(f"Received input data: {input_fmsum}")
+
+        # Convert JSON payload to DataFrame
         radf_2 = pd.DataFrame.from_records(input_fmsum)
-        fmsumdnld(radf_2)
-        # return summary_download
+        logging.info(f"Converted input data to DataFrame: {radf_2}")
+
+        # Process DataFrame and generate CSV file
+        file_path = fmsumdnld(radf_2)
+        logging.info(f"Generated CSV file at path: {file_path}")
+
+        # Check if file_path is None
+        if file_path is None:
+            logging.error("File path is None")
+            raise HTTPException(status_code=500, detail="File path is None")
+
+        # Check if file exists
+        if not os.path.exists(file_path):
+            logging.error(f"File not found: {file_path}")
+            raise HTTPException(status_code=500, detail="File not found")
+
+        # Return the generated CSV file as a downloadable response
+        return FileResponse(
+            path=file_path,
+            filename="fm_summary.csv",
+            media_type='text/csv',
+            headers={"Content-Disposition": "attachment; filename=fm_summary.csv"}
+        )
     except Exception as err:
+        logging.error(f"Error processing input data: {err}")
         raise HTTPException(status_code=400, detail=f"bad data: {err}")
 
 #-------------------------------------------Finance Delivery endpoint---------------------------------------------------------------------------------------------------
-@app.post("/calculate_fte")
+@app.post("/api/calculate_fte")
 async def calculate_fte(request:Request):
      try:
         body = await request.body()
@@ -1027,7 +1077,7 @@ async def calculate_fte(request:Request):
      except Exception as err:
         raise HTTPException(status_code=400, detail=f"bad data: {err}")
 
-@app.post("/calculate_fte/activity_summary")
+@app.post("/api/calculate_fte/activity_summary")
 async def calculate_activity_summary(request:Request):
     try:
         body = await request.body()
@@ -1044,7 +1094,7 @@ async def calculate_activity_summary(request:Request):
     except Exception as err:
         raise HTTPException(status_code=400, detail=f"bad data: {err}")
     
-@app.post("/calculate_fte/activity_summary/download")
+@app.post("/api/calculate_fte/activity_summary/download")
 async def download_summary_ep(request:Request):
     try:
         body = await request.body()
