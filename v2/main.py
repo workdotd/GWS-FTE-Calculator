@@ -961,8 +961,8 @@ app.add_middleware(
 )
 
 #-----------------------------------------------Tocken for SSO-------------------------------------------------------------------------------
-CLIENT_ID = "c2e0dc60-1bcd-45be-90e0-b48e26545a81"
-CLIENT_SECRET = "XxK8Q~ijTpvj1.0JKRIrep-V1zvE86Y6v2yq_bm8"
+CLIENT_ID = "xxxxx"
+CLIENT_SECRET = "xxxxx"
 REDIRECT_URI = "https://finance-ftecalculator-dev2.cbre.com/callback"
 TOKEN_URL = "https://login.microsoftonline.com/0159e9d0-09a0-4edf-96ba-a3deea363c28/v2.0"
 
