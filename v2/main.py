@@ -11,6 +11,8 @@ import logging
 import dbconn
 import os
 import requests
+import traceback
+from urllib.parse import urlencode
 
 
 app = FastAPI()
@@ -960,42 +962,73 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-#-----------------------------------------------Tocken for SSO-------------------------------------------------------------------------------
-CLIENT_ID = "xxxxx"
-CLIENT_SECRET = "xxxxx"
+#-----------------------------------------------Token for SSO-------------------------------------------------------------------------------
+CLIENT_ID = "c2e0dc60-1bcd-45be-90e0-b48e26545a81"
+CLIENT_SECRET = "XxK8Q~ijTpvj1.0JKRIrep-V1zvE86Y6v2yq_bm8"
 REDIRECT_URI = "https://finance-ftecalculator-dev2.cbre.com/callback"
 TOKEN_URL = "https://login.microsoftonline.com/0159e9d0-09a0-4edf-96ba-a3deea363c28/v2.0"
-
+ 
 @app.get("/api/token")
 async def get_token(state: str, code: str):
     if not code or not state:
         raise HTTPException(status_code=400, detail="Missing code or state")
-
+ 
+    if not all([TOKEN_URL, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET]):
+        logging.error("One or more environment variables are missing")
+        raise HTTPException(status_code=500, detail="Internal server error")
+ 
+    # Check if TOKEN_URL is reachable
     try:
-        # Exchange the authorization code for an access token
+        check_response = requests.get(TOKEN_URL, timeout=30)
+        if check_response.status_code != 200:
+            logging.error(f"TOKEN_URL is not reachable: {check_response.status_code}, response: {check_response.text}")
+            raise HTTPException(status_code=500, detail="TOKEN_URL is not reachable")
+    except requests.RequestException as e:
+        logging.error(f"Error reaching TOKEN_URL: {e}")
+        raise HTTPException(status_code=500, detail="Error reaching TOKEN_URL")
+ 
+    # Exchange the authorization code for an access token
+    try:
+        # URL encode the parameters
+        data = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": REDIRECT_URI,
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+        }
+ 
+        encoded_data = urlencode(data)
+ 
         token_response = requests.post(
             TOKEN_URL,
-            data={
-                "grant_type": "authorization_code",
-                "code": code,
-                "redirect_uri": REDIRECT_URI,
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-            },
+            data=encoded_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=30  # Timeout after 30 seconds
         )
-
+ 
+        if token_response.status_code == 401:
+            logging.error(f"Invalid client credentials: {token_response.text}")
+            raise HTTPException(status_code=401, detail="Invalid client credentials")
+ 
         if token_response.status_code != 200:
+            if token_response.status_code == 400 and "invalid_grant" in token_response.text:
+                logging.error(f"Invalid or expired authorization code: {token_response.text}")
+                raise HTTPException(status_code=400, detail="Invalid or expired authorization code")
+            logging.error(f"Token exchange failed: {token_response.status_code}, response: {token_response.text}")
             raise HTTPException(status_code=token_response.status_code, detail="Token exchange failed")
-
+ 
         token_data = token_response.json()
         access_token = token_data.get("access_token")
-
+ 
         if not access_token:
+            logging.error(f"No access token found in response: {token_response.text}")
             raise HTTPException(status_code=400, detail="No access token found")
-
+ 
         return {"access_token": access_token}
     except Exception as e:
-        logging.error(f"Error exchanging token: {e}")
+        logging.error(f"Error exchanging token: {e}, state: {state}, code: {code}")
+        logging.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Internal server error")
 
 #-------------------------------------------Finance Management endpoint---------------------------------------------------------------------------------------------------
