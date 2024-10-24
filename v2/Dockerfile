@@ -1,7 +1,11 @@
 # Copyright (C) 2022 CBRE, Inc. All rights reserved.
 FROM python:3.8-slim-buster
 
-RUN groupadd -r mygroup && useradd -r -g mygroup -d /home/myuser -m myuser
+RUN groupadd -g 1001 mygroup && \
+    useradd -u 1001 -g mygroup -d /usr/src/app -m myuser
+
+RUN mkdir -p /usr/src/app && chown myuser:mygroup /usr/src/app
+
  
 WORKDIR /usr/src/app
 
