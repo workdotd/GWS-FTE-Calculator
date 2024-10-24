@@ -4,8 +4,9 @@ import joblib
 import math as mt
 import uuid
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse , RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
 import logging
 import dbconn
@@ -13,7 +14,11 @@ import os
 import requests
 import traceback
 from urllib.parse import urlencode
-
+import secrets
+import pkce
+from typing import Tuple
+import hashlib
+import base64
 
 app = FastAPI()
 #-----------------------------------------------------------------------------------------------------------------------
@@ -963,129 +968,181 @@ app.add_middleware(
 )
 
 #-----------------------------------------------Token for SSO-------------------------------------------------------------------------------
+# Generate a secure secret key for session middleware
+secret_key = secrets.token_urlsafe(32)
+
+# Add session middleware with the generated secret key
+app.add_middleware(SessionMiddleware, secret_key=secret_key)
+
 CLIENT_ID = "c2e0dc60-1bcd-45be-90e0-b48e26545a81"
 CLIENT_SECRET = "XxK8Q~ijTpvj1.0JKRIrep-V1zvE86Y6v2yq_bm8"
 REDIRECT_URI = "https://finance-ftecalculator-dev2.cbre.com/callback"
-TOKEN_URL = "https://login.microsoftonline.com/0159e9d0-09a0-4edf-96ba-a3deea363c28/v2.0"
- 
+TOKEN_URL = "https://login.microsoftonline.com/0159e9d0-09a0-4edf-96ba-a3deea363c28/oauth2/v2.0/token"
+AUTHORIZATION_URL = "https://login.microsoftonline.com/0159e9d0-09a0-4edf-96ba-a3deea363c28/oauth2/v2.0/authorize"
+
+def generate_code_verifier(length: int = 128) -> str:
+    if not 43 <= length <= 128:
+        msg = 'Parameter `length` must verify `43 <= length <= 128`.'
+        raise ValueError(msg)
+    code_verifier = secrets.token_urlsafe(96)[:length]
+    return code_verifier
+
+def get_code_challenge(code_verifier: str) -> str:
+    if not 43 <= len(code_verifier) <= 128:
+        msg = 'Parameter `code_verifier` must verify '
+        msg += '`43 <= len(code_verifier) <= 128`.'
+        raise ValueError(msg)
+    hashed = hashlib.sha256(code_verifier.encode('ascii')).digest()
+    encoded = base64.urlsafe_b64encode(hashed)
+    code_challenge = encoded.decode('ascii')[:-1]
+    return code_challenge
+
+def generate_pkce_pair(code_verifier_length: int = 128) -> Tuple[str, str]:
+    """
+    Generate a code verifier and code challenge using the pkce library.
+    """
+    if not 43 <= code_verifier_length <= 128:
+        msg = 'Parameter `code_verifier_length` must verify '
+        msg += '`43 <= code_verifier_length <= 128`.'
+        raise ValueError(msg)
+    code_verifier = generate_code_verifier(code_verifier_length)
+    code_challenge = get_code_challenge(code_verifier)
+    return code_verifier, code_challenge
+
+
+def check_url_reachable(url):
+    """
+    Check if the given URL is reachable by sending a HEAD request.
+    """
+    try:
+        response = requests.head(url, timeout=5)
+        return response.status_code == 200
+    except requests.RequestException as e:
+        logging.error(f"Error checking URL reachability: {e}")
+        return False
+
+@app.get("/api/login")
+async def login(request: Request, state: str):
+    #Endpoint to initiate the OAuth 2.0 authorization flow. Generates a code verifier and code challenge, stores the code verifier in the session, and redirects the user to the authorization URL.
+    
+    code_verifier, code_challenge = generate_pkce_pair()
+    # Store code_verifier and code_challenge in the session
+    request.session['code_verifier'] = code_verifier
+    request.session['code_challenge'] = code_challenge
+    logging.info(f"Stored code_verifier in session: {code_verifier}")
+    logging.info(f"Stored code_challenge in session: {code_challenge}")
+    authorization_url = (
+        f"{AUTHORIZATION_URL}?response_type=code&client_id={CLIENT_ID}"
+        f"&redirect_uri={REDIRECT_URI}&code_challenge={code_challenge}&code_challenge_method=S256"
+        f"&scope=read write&state={state}"
+    )
+
+    logging.info(f"Authorization URL: {authorization_url}")
+    return {
+        "authorization_url": authorization_url,
+        "code_verifier": code_verifier,
+        "code_challenge": code_challenge
+    }
+
 @app.get("/api/token")
-async def get_token(state: str, code: str):
-    if not code or not state:
-        raise HTTPException(status_code=400, detail="Missing code or state")
- 
+async def get_token(request: Request, state: str, code: str, code_verifier: str):
+    """
+    Endpoint to exchange authorization code for access token.
+    Requires 'state' and 'code' as query parameters.
+    """
+    # Check if 'code', 'state', and 'code_verifier' parameters are provided
+    if not code or not state or not code_verifier:
+        logging.error("Missing code, state, or code_verifier")
+        raise HTTPException(status_code=400, detail="Missing code, state, or code_verifier")
+
+    # Check if all necessary environment variables are set
     if not all([TOKEN_URL, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET]):
         logging.error("One or more environment variables are missing")
         raise HTTPException(status_code=500, detail="Internal server error")
- 
-    # Check if TOKEN_URL is reachable
+
+    # Check if the token URL is reachable
+    if not check_url_reachable(TOKEN_URL):
+        logging.error("Token URL is not reachable")
+        raise HTTPException(status_code=500, detail="Token URL is not reachable")
+
+    if not all([TOKEN_URL, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET]):
+        logging.error("One or more environment variables are missing")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    # Check if the token URL is reachable
+    if not check_url_reachable(TOKEN_URL):
+        logging.error("Token URL is not reachable")
+        raise HTTPException(status_code=500, detail="Token URL is not reachable")
+
     try:
-        check_response = requests.get(TOKEN_URL, timeout=30)
-        if check_response.status_code != 200:
-            logging.error(f"TOKEN_URL is not reachable: {check_response.status_code}, response: {check_response.text}")
-            raise HTTPException(status_code=500, detail="TOKEN_URL is not reachable")
-    except requests.RequestException as e:
-        logging.error(f"Error reaching TOKEN_URL: {e}")
-        raise HTTPException(status_code=500, detail="Error reaching TOKEN_URL")
- 
-    # Exchange the authorization code for an access token
-    try:
-        # URL encode the parameters
+        # Retrieve the stored code_verifier and code_challenge from session
+        stored_code_verifier = request.session.get('code_verifier')
+        stored_code_challenge = request.session.get('code_challenge')
+        if not stored_code_verifier or not stored_code_challenge:
+            logging.error("Code verifier or code challenge not found in session")
+            raise HTTPException(status_code=400, detail="Code verifier or code challenge not found in session")
+
+        logging.info(f"Stored code_verifier: {stored_code_verifier}")
+        logging.info(f"Stored code_challenge: {stored_code_challenge}")
+        logging.info(f"Received code_verifier: {code_verifier}")
+
+        # Verify that the received code_verifier matches the stored one
+        if stored_code_verifier != code_verifier:
+            logging.error(f"Received code_verifier does not match stored code_verifier , Stored code_verifier: {stored_code_verifier}, Received code_verifier: {code_verifier}")
+            raise HTTPException(status_code=400, detail="Code verifier mismatch")
+
+        # URL encode the parameters for the token request
         data = {
             "grant_type": "authorization_code",
             "code": code,
             "redirect_uri": REDIRECT_URI,
             "client_id": CLIENT_ID,
             "client_secret": CLIENT_SECRET,
+            "code_verifier": code_verifier,
+            "scope": "read write"
         }
- 
         encoded_data = urlencode(data)
- 
+        logging.info(f"Encoded data for token request: {encoded_data}")
+
+        # Send POST request to the token URL to exchange the authorization code for an access token
         token_response = requests.post(
             TOKEN_URL,
             data=encoded_data,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
-            timeout=30  # Timeout after 30 seconds
+            timeout=30  # Timeout after 10 seconds
         )
- 
+        logging.info(f"Token response status code: {token_response.status_code}")
+
+        # Handle invalid client credentials
         if token_response.status_code == 401:
             logging.error(f"Invalid client credentials: {token_response.text}")
             raise HTTPException(status_code=401, detail="Invalid client credentials")
- 
+
+        # Handle other non-successful responses
         if token_response.status_code != 200:
             if token_response.status_code == 400 and "invalid_grant" in token_response.text:
-                logging.error(f"Invalid or expired authorization code: {token_response.text}")
+                logging.error(f"Invalid or expired authorization code: {token_response.text}, received_code_verifier: {code_verifier}, Stored code_verifier: {stored_code_verifier}")
                 raise HTTPException(status_code=400, detail="Invalid or expired authorization code")
             logging.error(f"Token exchange failed: {token_response.status_code}, response: {token_response.text}")
             raise HTTPException(status_code=token_response.status_code, detail="Token exchange failed")
- 
+
+        # Parse the token response JSON
         token_data = token_response.json()
+        logging.info(f"Token data received: {token_data}")
         access_token = token_data.get("access_token")
- 
+
+        # Check if access token is present in the response
         if not access_token:
             logging.error(f"No access token found in response: {token_response.text}")
             raise HTTPException(status_code=400, detail="No access token found")
- 
+
+        # Return the access token
         return {"access_token": access_token}
     except Exception as e:
+        # Log any exceptions that occur during the token exchange process
         logging.error(f"Error exchanging token: {e}, state: {state}, code: {code}")
         logging.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Internal server error")
-
-#-------------------------------------------Finance Management endpoint---------------------------------------------------------------------------------------------------
-@app.post("/api/finance_management")
-async def finance_management(request: Request):
-    try:
-        input_fm = await request.json()
-        logging.info(f"Received input data: {input_fm}")
-        radf_1 = pd.DataFrame.from_records(input_fm)
-        logging.info(f"Converted input data to DataFrame: {radf_1}")
-        fm_summary = fmanagement(radf_1)
-        logging.info(f"Generated summary data: {fm_summary}")
-        # Convert DataFrame to dictionary
-        fm_summary.fillna("None", inplace=True)
-        fm_summary_dict = fm_summary.reset_index().to_dict(orient='records')#orient='records'
-        return fm_summary_dict
-    except Exception as err:
-        logging.error(f"Error processing input data: {err}")
-        raise HTTPException(status_code=400, detail=f"bad data: {err}")
-
-@app.post("/api/finance_management/fm_summary_download")
-async def fm_sum_dnld(request:Request):
-    try:
-        logging.info("Received request for fm_summary_download")
-
-        # Read JSON payload from the request
-        input_fmsum = await request.json()
-        logging.info(f"Received input data: {input_fmsum}")
-
-        # Convert JSON payload to DataFrame
-        radf_2 = pd.DataFrame.from_records(input_fmsum)
-        logging.info(f"Converted input data to DataFrame: {radf_2}")
-
-        # Process DataFrame and generate CSV file
-        file_path = fmsumdnld(radf_2)
-        logging.info(f"Generated CSV file at path: {file_path}")
-
-        # Check if file_path is None
-        if file_path is None:
-            logging.error("File path is None")
-            raise HTTPException(status_code=500, detail="File path is None")
-
-        # Check if file exists
-        if not os.path.exists(file_path):
-            logging.error(f"File not found: {file_path}")
-            raise HTTPException(status_code=500, detail="File not found")
-
-        # Return the generated CSV file as a downloadable response
-        return FileResponse(
-            path=file_path,
-            filename="fm_summary.csv",
-            media_type='text/csv',
-            headers={"Content-Disposition": "attachment; filename=fm_summary.csv"}
-        )
-    except Exception as err:
-        logging.error(f"Error processing input data: {err}")
-        raise HTTPException(status_code=400, detail=f"bad data: {err}")
 
 #-------------------------------------------Finance Delivery endpoint---------------------------------------------------------------------------------------------------
 @app.post("/api/calculate_fte")
