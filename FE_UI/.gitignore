@@ -1,0 +1,12 @@
+# dependencies
+node_modules
+
+# System Files
+.DS_Store
+Thumbs.db
+
+debug.log
+.npmrc
+
+# compiled output
+build
